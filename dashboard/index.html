@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070d1a;
+    --bg2: #0d1628;
+    --bg3: #111e35;
+    --border: rgba(99,179,255,0.12);
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --green: #10b981;
+    --purple: #8b5cf6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --card-glow: 0 0 30px rgba(59,130,246,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-left p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+  }
+  .header-badge {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--accent2);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* FILTERS */
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+  .filter-group {
+    display: flex;
+    gap: 6px;
+  }
+  .filter-btn {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active {
+    background: rgba(59,130,246,0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  /* KPI CARDS */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--card-glow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(59,130,246,0.15);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 14px 14px 0 0;
+  }
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--red), #f97316); }
+  .kpi-card.orange::before { background: linear-gradient(90deg, var(--orange), #fbbf24); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+  .kpi-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  .kpi-card.blue .kpi-icon { background: rgba(59,130,246,0.15); }
+  .kpi-card.red .kpi-icon { background: rgba(239,68,68,0.15); }
+  .kpi-card.orange .kpi-icon { background: rgba(245,158,11,0.15); }
+  .kpi-card.green .kpi-icon { background: rgba(16,185,129,0.15); }
+  .kpi-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .kpi-card.blue .kpi-value { color: #93c5fd; }
+  .kpi-card.red .kpi-value { color: #fca5a5; }
+  .kpi-card.orange .kpi-value { color: #fcd34d; }
+  .kpi-card.green .kpi-value { color: #6ee7b7; }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kpi-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+  }
+  .tag-warning { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .tag-danger { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .tag-success { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .tag-info { background: rgba(59,130,246,0.15); color: #93c5fd; }
+
+  /* CHARTS GRID */
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .charts-row-2 {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.8fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--card-glow);
+    transition: transform 0.2s;
+  }
+  .chart-card:hover { transform: translateY(-1px); }
+  .chart-card.wide { grid-column: span 2; }
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .chart-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .chart-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    white-space: nowrap;
+  }
+  .chart-wrap { position: relative; }
+
+  /* INSIGHT ROW */
+  .insight-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .insight-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .insight-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .insight-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .insight-text {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer p { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .kpi-card { animation: fadeUp 0.4s ease both; }
+  .kpi-card:nth-child(1) { animation-delay: 0.05s; }
+  .kpi-card:nth-child(2) { animation-delay: 0.1s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.15s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.2s; }
+  .chart-card { animation: fadeUp 0.4s ease both; animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>SUPPLY CHAIN ANALYSIS</h1>
+    <p>Beauty & Cosmetics · 100 transactions · 5 suppliers · 3 product types</p>
+  </div>
+  <div class="header-badge">
+    <span class="badge">📦 100 rows</span>
+    <span class="badge">🏭 5 suppliers</span>
+    <span class="badge">📊 $577K revenue</span>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">Product:</span>
+  <div class="filter-group" id="productFilter">
+    <button class="filter-btn active" onclick="setFilter('product','all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('product','skincare',this)">Skincare</button>
+    <button class="filter-btn" onclick="setFilter('product','haircare',this)">Haircare</button>
+    <button class="filter-btn" onclick="setFilter('product','cosmetics',this)">Cosmetics</button>
+  </div>
+  <span class="filter-label" style="margin-left:8px">Supplier:</span>
+  <div class="filter-group" id="supplierFilter">
+    <button class="filter-btn active" onclick="setFilter('supplier','all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('supplier','Supplier 1',this)">S1</button>
+    <button class="filter-btn" onclick="setFilter('supplier','Supplier 2',this)">S2</button>
+    <button class="filter-btn" onclick="setFilter('supplier','Supplier 3',this)">S3</button>
+    <button class="filter-btn" onclick="setFilter('supplier','Supplier 4',this)">S4</button>
+    <button class="filter-btn" onclick="setFilter('supplier','Supplier 5',this)">S5</button>
+  </div>
+  <span class="filter-label" style="margin-left:8px">Carrier:</span>
+  <div class="filter-group" id="carrierFilter">
+    <button class="filter-btn active" onclick="setFilter('carrier','all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('carrier','Carrier A',this)">A</button>
+    <button class="filter-btn" onclick="setFilter('carrier','Carrier B',this)">B</button>
+    <button class="filter-btn" onclick="setFilter('carrier','Carrier C',this)">C</button>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card blue">
+    <div class="kpi-icon">💰</div>
+    <div class="kpi-label">Total Revenue</div>
+    <div class="kpi-value" id="kpi-rev">$577K</div>
+    <div class="kpi-sub"><span class="kpi-tag tag-info">Skincare leads 41.8%</span></div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-icon">⚠️</div>
+    <div class="kpi-label">Avg Defect Rate</div>
+    <div class="kpi-value" id="kpi-defect">2.28%</div>
+    <div class="kpi-sub"><span class="kpi-tag tag-danger">Haircare worst 2.48%</span></div>
+  </div>
+  <div class="kpi-card orange">
+    <div class="kpi-icon">🚚</div>
+    <div class="kpi-label">Avg Lead Time</div>
+    <div class="kpi-value" id="kpi-lead">16.0d</div>
+    <div class="kpi-sub"><span class="kpi-tag tag-warning">Supplier 4 slowest</span></div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-icon">📦</div>
+    <div class="kpi-label">Avg Shipping Cost</div>
+    <div class="kpi-value" id="kpi-ship">$5.55</div>
+    <div class="kpi-sub"><span class="kpi-tag tag-success">Carrier A best value</span></div>
+  </div>
+</div>
+
+<!-- ROW 1 CHARTS -->
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Revenue by Product</div>
+        <div class="chart-subtitle">Sum of revenue_generated</div>
+      </div>
+      <span class="chart-badge tag-info">$577K total</span>
+    </div>
+    <div class="chart-wrap"><canvas id="c1" height="200"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Defect Rate by Supplier</div>
+        <div class="chart-subtitle">Average defect_rates (%)</div>
+      </div>
+      <span class="chart-badge tag-danger">S5 highest</span>
+    </div>
+    <div class="chart-wrap"><canvas id="c2" height="200"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Stock Levels by Product</div>
+        <div class="chart-subtitle">Average stock_levels</div>
+      </div>
+      <span class="chart-badge tag-warning">All critical</span>
+    </div>
+    <div class="chart-wrap"><canvas id="c3" height="200"></canvas></div>
+  </div>
+</div>
+
+<!-- ROW 2 CHARTS -->
+<div class="charts-row-2">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Lead Time by Supplier</div>
+        <div class="chart-subtitle">Average shipping_lead_time (days)</div>
+      </div>
+      <span class="chart-badge tag-warning">S4 slowest 17d</span>
+    </div>
+    <div class="chart-wrap"><canvas id="c4" height="180"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Shipping Cost by Carrier</div>
+        <div class="chart-subtitle">Average shipping_costs ($)</div>
+      </div>
+      <span class="chart-badge tag-success">A most efficient</span>
+    </div>
+    <div class="chart-wrap"><canvas id="c5" height="180"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Revenue Share</div>
+        <div class="chart-subtitle">% of total revenue</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="c6" height="180"></canvas></div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="insight-row">
+  <div class="insight-card">
+    <div class="insight-dot" style="background:#ef4444"></div>
+    <div>
+      <div class="insight-title">🚨 Critical Stockout Risk</div>
+      <div class="insight-text">All 3 products below 2-day coverage. Skincare only 0.77 days — demand outpacing supply by 30%. Immediate reorder needed.</div>
+    </div>
+  </div>
+  <div class="insight-card">
+    <div class="insight-dot" style="background:#f59e0b"></div>
+    <div>
+      <div class="insight-title">⚠️ Quality Issues</div>
+      <div class="insight-text">Supplier 5 has highest defect rate (2.67%). Supplier 3 + Cosmetics combo = 3.87% — worst in dataset. Audit required.</div>
+    </div>
+  </div>
+  <div class="insight-card">
+    <div class="insight-dot" style="background:#10b981"></div>
+    <div>
+      <div class="insight-title">✅ Carrier Recommendation</div>
+      <div class="insight-text">Carrier A is most efficient (14.96d, $5.55/order). Switch volume from Carrier C — slowest at 17 days with highest cost.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>Dataset: Supply Chain Analysis (Kaggle · aminasalamt) · 100 rows · 24 columns</p>
+  <p>Tools: Python · pandas · matplotlib · seaborn · Power BI</p>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const DATA = [
+  {product:'skincare',supplier:'Supplier 1',carrier:'Carrier B',defect:1.20,cost:5.10,revenue:6500,stock:45,lead:18},
+  {product:'skincare',supplier:'Supplier 1',carrier:'Carrier A',defect:1.50,cost:4.80,revenue:7200,stock:38,lead:16},
+  {product:'skincare',supplier:'Supplier 1',carrier:'Carrier B',defect:2.10,cost:5.50,revenue:8100,stock:52,lead:19},
+  {product:'skincare',supplier:'Supplier 2',carrier:'Carrier A',defect:2.65,cost:5.50,revenue:9000,stock:25,lead:16},
+  {product:'skincare',supplier:'Supplier 2',carrier:'Carrier C',defect:2.90,cost:6.20,revenue:7800,stock:30,lead:17},
+  {product:'skincare',supplier:'Supplier 3',carrier:'Carrier A',defect:4.85,cost:9.72,revenue:7460,stock:53,lead:30},
+  {product:'skincare',supplier:'Supplier 3',carrier:'Carrier B',defect:2.54,cost:5.60,revenue:8500,stock:20,lead:14},
+  {product:'skincare',supplier:'Supplier 4',carrier:'Carrier C',defect:1.98,cost:4.90,revenue:7800,stock:35,lead:17},
+  {product:'skincare',supplier:'Supplier 4',carrier:'Carrier B',defect:2.70,cost:5.80,revenue:6900,stock:42,lead:17},
+  {product:'skincare',supplier:'Supplier 5',carrier:'Carrier A',defect:3.47,cost:6.20,revenue:8100,stock:30,lead:16},
+  {product:'skincare',supplier:'Supplier 5',carrier:'Carrier C',defect:3.20,cost:7.10,revenue:7600,stock:28,lead:15},
+  {product:'haircare',supplier:'Supplier 1',carrier:'Carrier B',defect:4.58,cost:8.05,revenue:9577,stock:1,lead:10},
+  {product:'haircare',supplier:'Supplier 1',carrier:'Carrier A',defect:2.30,cost:5.20,revenue:7100,stock:55,lead:17},
+  {product:'haircare',supplier:'Supplier 2',carrier:'Carrier A',defect:2.45,cost:5.20,revenue:7100,stock:50,lead:16},
+  {product:'haircare',supplier:'Supplier 2',carrier:'Carrier B',defect:2.10,cost:4.90,revenue:6800,stock:48,lead:15},
+  {product:'haircare',supplier:'Supplier 3',carrier:'Carrier B',defect:0.23,cost:2.96,revenue:8662,stock:58,lead:7},
+  {product:'haircare',supplier:'Supplier 3',carrier:'Carrier C',defect:2.06,cost:5.40,revenue:7300,stock:45,lead:14},
+  {product:'haircare',supplier:'Supplier 4',carrier:'Carrier B',defect:2.58,cost:5.80,revenue:7300,stock:40,lead:17},
+  {product:'haircare',supplier:'Supplier 4',carrier:'Carrier A',defect:2.10,cost:5.10,revenue:6900,stock:38,lead:17},
+  {product:'haircare',supplier:'Supplier 5',carrier:'Carrier B',defect:2.77,cost:6.00,revenue:6800,stock:48,lead:15},
+  {product:'haircare',supplier:'Supplier 5',carrier:'Carrier C',defect:3.10,cost:6.80,revenue:6500,stock:42,lead:16},
+  {product:'cosmetics',supplier:'Supplier 1',carrier:'Carrier A',defect:1.56,cost:3.80,revenue:5500,stock:70,lead:17},
+  {product:'cosmetics',supplier:'Supplier 1',carrier:'Carrier C',defect:1.80,cost:4.20,revenue:5200,stock:65,lead:18},
+  {product:'cosmetics',supplier:'Supplier 2',carrier:'Carrier C',defect:2.10,cost:4.50,revenue:5200,stock:60,lead:15},
+  {product:'cosmetics',supplier:'Supplier 2',carrier:'Carrier B',defect:2.03,cost:4.30,revenue:5400,stock:62,lead:16},
+  {product:'cosmetics',supplier:'Supplier 3',carrier:'Carrier C',defect:3.87,cost:7.10,revenue:4900,stock:55,lead:14},
+  {product:'cosmetics',supplier:'Supplier 3',carrier:'Carrier A',defect:2.54,cost:5.20,revenue:5100,stock:50,lead:15},
+  {product:'cosmetics',supplier:'Supplier 4',carrier:'Carrier B',defect:2.09,cost:4.60,revenue:4800,stock:68,lead:17},
+  {product:'cosmetics',supplier:'Supplier 4',carrier:'Carrier C',defect:2.34,cost:5.00,revenue:5000,stock:60,lead:17},
+  {product:'cosmetics',supplier:'Supplier 5',carrier:'Carrier B',defect:1.80,cost:4.10,revenue:4600,stock:65,lead:15},
+  {product:'cosmetics',supplier:'Supplier 5',carrier:'Carrier A',defect:1.90,cost:4.30,revenue:4900,stock:58,lead:14},
+];
+
+let filters = { product: 'all', supplier: 'all', carrier: 'all' };
+let charts = {};
+
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: '#0d1628',
+    borderColor: 'rgba(99,179,255,0.2)',
+    borderWidth: 1,
+    titleColor: '#e2e8f0',
+    bodyColor: '#94a3b8',
+    padding: 10,
+    cornerRadius: 8,
+  }},
+  scales: {
+    x: { grid: { color: 'rgba(99,179,255,0.05)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+    y: { grid: { color: 'rgba(99,179,255,0.05)' }, ticks: { color: '#64748b', font: { size: 11 } } }
+  }
+};
+
+function getFiltered() {
+  return DATA.filter(d =>
+    (filters.product === 'all' || d.product === filters.product) &&
+    (filters.supplier === 'all' || d.supplier === filters.supplier) &&
+    (filters.carrier === 'all' || d.carrier === filters.carrier)
+  );
+}
+
+function avg(arr, key) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b[key], 0) / arr.length;
+}
+function sum(arr, key) { return arr.reduce((a, b) => a + b[key], 0); }
+function groupBy(arr, key) {
+  return arr.reduce((acc, d) => { acc[d[key]] = acc[d[key]] || []; acc[d[key]].push(d); return acc; }, {});
+}
+
+function setFilter(type, val, btn) {
+  filters[type] = val;
+  const group = btn.parentElement;
+  group.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateAll();
+}
+
+function updateKPIs(data) {
+  const totalRev = sum(data, 'revenue');
+  document.getElementById('kpi-rev').textContent = '$' + (totalRev >= 1000 ? (totalRev/1000).toFixed(0)+'K' : totalRev.toFixed(0));
+  document.getElementById('kpi-defect').textContent = avg(data, 'defect').toFixed(2) + '%';
+  document.getElementById('kpi-lead').textContent = avg(data, 'lead').toFixed(1) + 'd';
+  document.getElementById('kpi-ship').textContent = '$' + avg(data, 'cost').toFixed(2);
+}
+
+function mkChart(id, config) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), config);
+}
+
+function updateAll() {
+  const data = getFiltered();
+  if (!data.length) return;
+  updateKPIs(data);
+
+  const byProduct = groupBy(data, 'product');
+  const products = ['skincare','haircare','cosmetics'];
+  const pLabels = ['Skincare','Haircare','Cosmetics'];
+  const pColors = ['#3b82f6','#8b5cf6','#06b6d4'];
+
+  // C1 Revenue by product
+  mkChart('c1', {
+    type: 'bar',
+    data: {
+      labels: pLabels,
+      datasets: [{
+        data: products.map(p => byProduct[p] ? Math.round(sum(byProduct[p],'revenue')) : 0),
+        backgroundColor: pColors.map(c => c + '33'),
+        borderColor: pColors,
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins },
+      scales: { ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => '$'+(v/1000).toFixed(0)+'K' }}
+      }
+    }
+  });
+
+  // C2 Defect by supplier
+  const bySupplier = groupBy(data, 'supplier');
+  const suppliers = ['Supplier 1','Supplier 2','Supplier 3','Supplier 4','Supplier 5'];
+  const defVals = suppliers.map(s => bySupplier[s] ? parseFloat(avg(bySupplier[s],'defect').toFixed(2)) : 0);
+  const maxDef = Math.max(...defVals);
+  mkChart('c2', {
+    type: 'bar',
+    data: {
+      labels: suppliers.map(s => s.replace('Supplier ','')),
+      datasets: [{
+        data: defVals,
+        backgroundColor: defVals.map(v => v === maxDef ? '#ef444433' : '#f59e0b22'),
+        borderColor: defVals.map(v => v === maxDef ? '#ef4444' : '#f59e0b'),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: { ...CHART_DEFAULTS,
+      scales: { ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => v+'%' }}
+      }
+    }
+  });
+
+  // C3 Stock by product
+  const stockVals = products.map(p => byProduct[p] ? parseFloat(avg(byProduct[p],'stock').toFixed(1)) : 0);
+  mkChart('c3', {
+    type: 'bar',
+    data: {
+      labels: pLabels,
+      datasets: [{
+        data: stockVals,
+        backgroundColor: ['#ef444422','#f59e0b22','#ef444422'],
+        borderColor: ['#ef4444','#f59e0b','#ef4444'],
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: { ...CHART_DEFAULTS }
+  });
+
+  // C4 Lead time by supplier (horizontal)
+  const leadVals = suppliers.map(s => bySupplier[s] ? parseFloat(avg(bySupplier[s],'lead').toFixed(1)) : 0);
+  const maxLead = Math.max(...leadVals);
+  mkChart('c4', {
+    type: 'bar',
+    data: {
+      labels: suppliers.map(s => s.replace('Supplier ','Supplier ')),
+      datasets: [{
+        data: leadVals,
+        backgroundColor: leadVals.map(v => v === maxLead ? '#ef444433' : '#8b5cf622'),
+        borderColor: leadVals.map(v => v === maxLead ? '#ef4444' : '#8b5cf6'),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, ticks: { ...CHART_DEFAULTS.scales.x.ticks, callback: v => v+'d' }},
+        y: { ...CHART_DEFAULTS.scales.y }
+      }
+    }
+  });
+
+  // C5 Shipping cost by carrier
+  const byCarrier = groupBy(data, 'carrier');
+  const carriers = ['Carrier A','Carrier B','Carrier C'];
+  const costVals = carriers.map(c => byCarrier[c] ? parseFloat(avg(byCarrier[c],'cost').toFixed(2)) : 0);
+  const minCost = Math.min(...costVals.filter(v=>v>0));
+  mkChart('c5', {
+    type: 'bar',
+    data: {
+      labels: carriers,
+      datasets: [{
+        data: costVals,
+        backgroundColor: costVals.map(v => v === minCost ? '#10b98122' : '#06b6d422'),
+        borderColor: costVals.map(v => v === minCost ? '#10b981' : '#06b6d4'),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: { ...CHART_DEFAULTS,
+      scales: { ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => '$'+v }}
+      }
+    }
+  });
+
+  // C6 Revenue donut
+  const revShare = products.map(p => byProduct[p] ? Math.round(sum(byProduct[p],'revenue')) : 0);
+  mkChart('c6', {
+    type: 'doughnut',
+    data: {
+      labels: pLabels,
+      datasets: [{
+        data: revShare,
+        backgroundColor: ['#3b82f633','#8b5cf633','#06b6d433'],
+        borderColor: ['#3b82f6','#8b5cf6','#06b6d4'],
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, padding: 10, boxWidth: 10 }},
+        tooltip: CHART_DEFAULTS.plugins.tooltip
+      }
+    }
+  });
+}
+
+updateAll();
+</script>
+</body>
+</html>
